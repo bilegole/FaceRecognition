@@ -11,10 +11,10 @@ downloads_links={
 
 #   下载到以下文件夹：
 target="../.cache/"
-# 
+#
 
 # 下载执行：
-import request
+import requests
 import os
 
 print(f"准备下载文件\n目标文件夹：{os.path.abspath(target)}\n")
@@ -27,7 +27,6 @@ for name in downloads_links:
             if chuck:
                 f.write(chunk)
                 download_size+=512
-            
-                
 
-            
+
+
