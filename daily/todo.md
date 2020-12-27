@@ -5,5 +5,5 @@
 5. 下载VGGFace数据集。
 6. 编写一个python下载程序
 7. 找到一个不错的python编辑器
-8. 尝试一下jupyter，看起来垃圾的一，划掉
+8. 尝试着使用spyder，垃圾。
 
