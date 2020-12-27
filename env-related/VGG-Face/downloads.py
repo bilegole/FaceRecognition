@@ -20,4 +20,7 @@ print(f"准备下载文件\n目标文件夹：{os.path.abspath(target)}\n")
 for name in downloads_links:
     rfile = requests.get(downloads_links[name],stream=True)
     with open(os.path.join(target,name),'wb') as file:
-        for chunk in rfile.iter_content(chunk_size=512)
+        for chunk in rfile.iter_content(chunk_size=512)：
+            if chuck:
+                f.wr
+            
