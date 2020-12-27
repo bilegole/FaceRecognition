@@ -5,5 +5,5 @@
 5. 下载VGGFace数据集。
 6. 编写一个python下载程序
 7. 找到一个不错的python编辑器
-8. 尝试着使用spyder，垃圾。
-
+8. 尝试着使用visual studio 2019，可以补全，但速度有点拉胯。
+9. 尝试着更改 visual studio 的python解释器。
