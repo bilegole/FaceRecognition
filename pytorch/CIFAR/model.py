@@ -6,6 +6,8 @@ from torch.utils.data.dataloader import DataLoader
 import torchvision
 import torchvision.transforms as transform
 
+# from pytorch.CIFAR.utils import progress_bar
+
 device = 'cuda:0' if torch.cuda.is_available() else "cpu"
 print(device)
 path = '../../.cache'
@@ -52,8 +54,9 @@ class GeneralNetwork(nn.Module):
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-
-        print("此处还需要添加进度条。")
+            print("一轮训练")
+            # progress_bar(batch_index,len(train_loader),'Loss: %.3f | Acc: %.3f%% (%d%d)'
+            #                    % (train_loss/(batch_index+1),100.*correct/total,correct,total))
 
     def Test(self, epoch: int):
         global best_acc
@@ -73,8 +76,9 @@ class GeneralNetwork(nn.Module):
                 _, predicted = outputs.max(1)
                 total += targets.max(1)
                 correct += predicted.eq(targets).sum().item()
+                print("一轮测试")
 
-            print("此处需要添加进度条。")
+
         acc = 100. * correct / total
         if acc > best_acc:
             print("此次运算不错，保存结果。")
@@ -109,7 +113,7 @@ class GeneralNetwork(nn.Module):
             transform.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         ])
         testset = torchvision.datasets.CIFAR10(
-            root=path, train=False, download=True
+            root=path, train=False, download=True,transform=self.transform_test
         )
         testloader = DataLoader(
             testset, batch_size=100, shuffle=False, num_workers=2
@@ -130,6 +134,7 @@ class DenseNet(GeneralNetwork):
         self.hidden_layer = nn.Linear(32 * 32 * 3, 10)
 
     def forward(self, x):
+        x = x.view(-1,32*32*3)
         return self.hidden_layer(x)
 
 
