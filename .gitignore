@@ -1,7 +1,5 @@
 .python
 .env
 .cache
-/pytorch/helloworld/data/MNIST/raw/train-images-idx3-ubyte.gz
-/pytorch/helloworld/data/
 /.idea/
 /document/
