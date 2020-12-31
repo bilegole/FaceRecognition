@@ -8,6 +8,7 @@ import torchvision
 import torchvision.transforms as transform
 import uuid
 from pytorch.CIFAR.utils import progress_bar
+import copy
 
 # from .utils import progress_bar
 device = 'cuda:0' if torch.cuda.is_available() else "cpu"
@@ -28,14 +29,25 @@ class GeneralNetwork(nn.Module):
         self.checkpoint = os.path.join(self.root_path, 'chcekpoint')
 
         self.init_layers()
+        self.GetOptimizer()
+        self.train_loader = self.GetTrainLoader()
+        self.test_loader = self.GetTestLoader()
+        self.criterion = self.GetCriterion()
 
         self.acc: float = 0.
         self.best_acc: float = 0.
         self.epoch: int = 0
+        self.history = dict()
         self.load_checkpoint()
 
     def init_layers(self):
         pass
+
+    def name(self):
+        return "未起名"
+
+    def description(self):
+        return "无特殊描述"
 
     def the_back_up(self):
         return os.path.join(self.checkpoint, self.id.__str__() + '.pth')
@@ -52,7 +64,7 @@ class GeneralNetwork(nn.Module):
         return id
 
     def forward(self, x: torch.Tensor):
-        pass
+        return x
 
     def load_checkpoint(self):
         if os.path.exists(self.the_back_up()):
@@ -61,6 +73,7 @@ class GeneralNetwork(nn.Module):
                 self.load_state_dict(checkpoint['net'])
                 self.best_acc = checkpoint['acc']
                 self.epoch = checkpoint['epoch']
+                self.history = checkpoint['history']
                 print(f"当前存档位置为：{self.the_back_up()},读取数据。\n当前最佳acc为\t{self.best_acc}\n轮次为\t{self.epoch}")
             except:
                 print("网络结构已变更，是否无视存档？")
@@ -73,7 +86,11 @@ class GeneralNetwork(nn.Module):
         state = {
             'net': self.state_dict(),
             'acc': self.acc,
-            'epoch': self.epoch
+            'epoch': self.epoch,
+            'id':self.id,
+            'name':self.name(),
+            'description':self.description(),
+            'history':self.history
         }
         if not os.path.isdir(self.checkpoint):
             os.mkdir(self.checkpoint)
@@ -85,20 +102,14 @@ class GeneralNetwork(nn.Module):
             self.epoch = epoch
             self.Train(epoch, tmp + epoch_count)
             self.Test(epoch, tmp + epoch_count)
+            if self.scheduler:
+                self.scheduler.step()
 
     def Train(self, epoch: int, epoch_max: int):
         self.train()
         train_loss = 0
         correct = 0
         total = 0
-        if not hasattr(self, 'train_loader'):
-            self.train_loader = self.GetTrainLoader()
-        if not hasattr(self, 'optimizer'):
-            self.optimizer = self.GetOptimizer()
-        # optimizer = self.GetOptimizer()
-        if not hasattr(self,'criterion'):
-            self.criterion = self.GetCriterion()
-        # criterion = self.GetCriterion()
         for batch_index, (inputs, targets) in enumerate(self.train_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = self(inputs)
@@ -111,19 +122,15 @@ class GeneralNetwork(nn.Module):
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
             # print("一轮训练")
-            progress_bar(batch_index, len(self.train_loader), ' Loss: %.3f | Acc: %.3f%% (%d%d) | %d/%d | '
+            progress_bar(batch_index, len(self.train_loader), ' Loss: %.3f | Acc: %.3f%% (%6d%6d) | %d/%d | '
                          % (train_loss / (batch_index + 1), 100. * correct / total, correct, total, epoch, epoch_max))
+        self.train_loss = train_loss
 
     def Test(self, epoch: int, epoch_max: int):
         self.eval()
         test_loss = 0
         correct = 0
         total = 0
-        if not hasattr(self, "test_loader"):
-            self.test_loader = self.GetTestLoader()
-        if not hasattr(self,"criterion"):
-            self.criterion = self.GetCriterion()
-        # criterion = self.GetCriterion()
         with torch.no_grad():
             for batch_index, (inputs, targets) in enumerate(self.test_loader):
                 inputs, targets = inputs.to(device), targets.to(device)
@@ -135,12 +142,20 @@ class GeneralNetwork(nn.Module):
                 total += targets.size(0)
                 correct += predicted.eq(targets).sum().item()
                 # print("一轮测试")
-                progress_bar(batch_index, len(self.test_loader), "Loss: %.3f | Acc: %.3f%% (%d%d) | %d/%d | "
+                progress_bar(batch_index, len(self.test_loader), " Loss: %.3f | Acc: %.3f%% (%6d%6d) | %d/%d | "
                              % (
                                  test_loss / (batch_index + 1), 100. * correct / total, correct, total, epoch,
                                  epoch_max))
 
         self.acc = 100. * correct / total
+        self.history[epoch] = copy.deepcopy({
+            'acc':self.acc,
+            'best_acc':self.best_acc,
+            'correct':correct,
+            'total':total,
+            'train_loss':self.train_loss,
+            'test_loss':test_loss
+        })
         if self.acc > self.best_acc:
             self.save_checkpoint()
 
@@ -173,9 +188,10 @@ class GeneralNetwork(nn.Module):
         return testloader
 
     def GetOptimizer(self, lr=1, momentum=0.9, weight_decay=5e-4):
-        return torch.optim.SGD(self.parameters(), lr=lr,
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr,
                                momentum=momentum, weight_decay=weight_decay)
-
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,T_max=200)
+        # return [self.optimizer,self.scheduler]
     def GetCriterion(self):
         return nn.CrossEntropyLoss()
 
@@ -208,6 +224,6 @@ class DenseNet_1(GeneralNetwork):
     def GetOptimizer(self, lr=1, momentum=0.9, weight_decay=5e-4):
         return torch.optim.SGD(self.parameters(), lr=lr,
                                momentum=momentum, weight_decay=weight_decay)
-    
+
     def GetCriterion(self):
         return nn.CrossEntropyLoss()

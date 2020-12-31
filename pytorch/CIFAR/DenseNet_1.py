@@ -7,9 +7,6 @@ import torch.nn.functional as fun
 
 
 class DenseNet_1(model.GeneralNetwork):
-    def __init__(self,id=None):
-        super(DenseNet_1, self).__init__(id=id)
-
     def init_layers(self):
         # self.input_size = 32 * 32 * 3
         # self.hidden_layer = nn.Linear(self.input_size, 100)
@@ -21,10 +18,10 @@ class DenseNet_1(model.GeneralNetwork):
         return self.output_layer(x)
 
 
+
 if __name__ == '__main__':
     print('开始初始化网络。。。')
-    # net = model.DenseNet_1(id="922afef5-4b0a-11eb-bff5-7185c27201ea").to(model.device)
-    net = DenseNet_1().to(model.device)
+    net = DenseNet_1(id="1150c22c-4b22-11eb-99eb-a4b1c131cc51").to(model.device)
     print("网络初始化完成，开始训练")
     net.train_and_test(epoch_count=20)
     print("网络训练完成")
