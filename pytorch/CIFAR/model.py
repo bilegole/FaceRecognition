@@ -187,11 +187,11 @@ class GeneralNetwork(nn.Module):
         )
         return testloader
 
-    def GetOptimizer(self, lr=1, momentum=0.9, weight_decay=5e-4):
+    def GetOptimizer(self, lr=0.1, momentum=0.9, weight_decay=5e-4):
         self.optimizer = torch.optim.SGD(self.parameters(), lr=lr,
                                momentum=momentum, weight_decay=weight_decay)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,T_max=200)
-        # return [self.optimizer,self.scheduler]
+
     def GetCriterion(self):
         return nn.CrossEntropyLoss()
 
