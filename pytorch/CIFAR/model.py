@@ -6,174 +6,143 @@ import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 import torchvision
 import torchvision.transforms as transform
+import uuid
+from pytorch.CIFAR.utils import progress_bar
 
-# from pytorch.CIFAR.utils import progress_bar
 # from .utils import progress_bar
 device = 'cuda:0' if torch.cuda.is_available() else "cpu"
 # print(device)
-path = '../../.cache'
+path = os.path.abspath('../../.cache')
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truch')
 # from ..CIFAR import
 '''
 全连接网络，主要就是一层隐藏层。
 '''
 
-# _, term_width = os.popen('stty size', 'r').read().split()
-# term_width = int(term_width)
-term_width = 20
-TOTAL_BAR_LENGTH = 65.
-last_time = time.time()
-begin_time = last_time
-best_acc = 0
-def progress_bar(current, total, msg=None):
-    global last_time, begin_time
-    if current == 0:
-        begin_time = time.time()  # Reset for new bar.
-
-    cur_len = int(TOTAL_BAR_LENGTH*current/total)
-    rest_len = int(TOTAL_BAR_LENGTH - cur_len) - 1
-
-    sys.stdout.write(' [')
-    for i in range(cur_len):
-        sys.stdout.write('=')
-    sys.stdout.write('>')
-    for i in range(rest_len):
-        sys.stdout.write('.')
-    sys.stdout.write(']')
-
-    cur_time = time.time()
-    step_time = cur_time - last_time
-    last_time = cur_time
-    tot_time = cur_time - begin_time
-
-    L = []
-    L.append('  Step: %s' % format_time(step_time))
-    L.append(' | Tot: %s' % format_time(tot_time))
-    if msg:
-        L.append(' | ' + msg)
-
-    msg = ''.join(L)
-    sys.stdout.write(msg)
-    for i in range(term_width-int(TOTAL_BAR_LENGTH)-len(msg)-3):
-        sys.stdout.write(' ')
-
-    # Go back to the center of the bar.
-    for i in range(term_width-int(TOTAL_BAR_LENGTH/2)+2):
-        sys.stdout.write('\b')
-    sys.stdout.write(' %d/%d ' % (current+1, total))
-
-    if current < total-1:
-        sys.stdout.write('\r')
-    else:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
-
-def format_time(seconds):
-    days = int(seconds / 3600/24)
-    seconds = seconds - days*3600*24
-    hours = int(seconds / 3600)
-    seconds = seconds - hours*3600
-    minutes = int(seconds / 60)
-    seconds = seconds - minutes*60
-    secondsf = int(seconds)
-    seconds = seconds - secondsf
-    millis = int(seconds*1000)
-
-    f = ''
-    i = 1
-    if days > 0:
-        f += str(days) + 'D'
-        i += 1
-    if hours > 0 and i <= 2:
-        f += str(hours) + 'h'
-        i += 1
-    if minutes > 0 and i <= 2:
-        f += str(minutes) + 'm'
-        i += 1
-    if secondsf > 0 and i <= 2:
-        f += str(secondsf) + 's'
-        i += 1
-    if millis > 0 and i <= 2:
-        f += str(millis) + 'ms'
-        i += 1
-    if f == '':
-        f = '0ms'
-    return f
 
 class GeneralNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, cache_path=path, id=None):
         super(GeneralNetwork, self).__init__()
+        self.id = self.generate_id(id)
+        self.root_path = cache_path
+        self.checkpoint = os.path.join(self.root_path, 'chcekpoint')
 
+        self.init_layers()
+
+        self.acc: float = 0.
+        self.best_acc: float = 0.
+        self.epoch: int = 0
+        self.load_checkpoint()
+
+    def init_layers(self):
         pass
 
-    def forward(self, x):
+    def the_back_up(self):
+        return os.path.join(self.checkpoint, self.id.__str__() + '.pth')
+
+    def generate_id(self, id):
+        if not id:
+            id = uuid.uuid1()
+            print(f"未指定uuid，生成：{id}")
+        elif not (isinstance(id, str) and len(id) == 36):
+            print(f"指定id不合法。请重新输入")
+            sys.exit(0)
+        else:
+            print(f"指定id为{id}")
+        return id
+
+    def forward(self, x: torch.Tensor):
         pass
 
-    def train_and_test(self, start_epoch=0):
-        for epoch in range(start_epoch, start_epoch + 200):
-            self.Train(epoch)
-            self.Test(epoch)
+    def load_checkpoint(self):
+        if os.path.exists(self.the_back_up()):
+            checkpoint = torch.load(self.the_back_up())
+            try:
+                self.load_state_dict(checkpoint['net'])
+                self.best_acc = checkpoint['acc']
+                self.epoch = checkpoint['epoch']
+                print(f"当前存档位置为：{self.the_back_up()},读取数据。\n当前最佳acc为\t{self.best_acc}\n轮次为\t{self.epoch}")
+            except:
+                print("网络结构已变更，是否无视存档？")
+                if input("是否退出？(yes/no)") == 'yes':
+                    sys.exit(0)
+        else:
+            print(f"未发现checkpoint")
 
-    def TheOptimizer(self):
-        pass
+    def save_checkpoint(self):
+        state = {
+            'net': self.state_dict(),
+            'acc': self.acc,
+            'epoch': self.epoch
+        }
+        if not os.path.isdir(self.checkpoint):
+            os.mkdir(self.checkpoint)
+        torch.save(state, os.path.join(self.checkpoint, self.id.__str__()) + '.pth')
 
-    def Train(self, epoch: int):
+    def train_and_test(self, epoch_count=1):
+        tmp = self.epoch + 1
+        for epoch in range(tmp, tmp + epoch_count):
+            self.epoch = epoch
+            self.Train(epoch, tmp + epoch_count)
+            self.Test(epoch, tmp + epoch_count)
+
+    def Train(self, epoch: int, epoch_max: int):
         self.train()
         train_loss = 0
         correct = 0
         total = 0
-        train_loader = self.GetTrainLoader()
-        optimizer = self.GetOptimizer()
-        criterion = self.GetCriterion()
-        for batch_index, (inputs, targets) in enumerate(train_loader):
+        if not hasattr(self, 'train_loader'):
+            self.train_loader = self.GetTrainLoader()
+        if not hasattr(self, 'optimizer'):
+            self.optimizer = self.GetOptimizer()
+        # optimizer = self.GetOptimizer()
+        if not hasattr(self,'criterion'):
+            self.criterion = self.GetCriterion()
+        # criterion = self.GetCriterion()
+        for batch_index, (inputs, targets) in enumerate(self.train_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = self(inputs)
-            loss = criterion(outputs, targets)
+            loss = self.criterion(outputs, targets)
             loss.backward()
-            optimizer.step()
+            self.optimizer.step()
 
             train_loss += loss.item()
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
             # print("一轮训练")
-            progress_bar(batch_index,len(train_loader),'Loss: %.3f | Acc: %.3f%% (%d%d)'
-                               % (train_loss/(batch_index+1),100.*correct/total,correct,total))
+            progress_bar(batch_index, len(self.train_loader), ' Loss: %.3f | Acc: %.3f%% (%d%d) | %d/%d | '
+                         % (train_loss / (batch_index + 1), 100. * correct / total, correct, total, epoch, epoch_max))
 
-    def Test(self, epoch: int):
-        global best_acc
+    def Test(self, epoch: int, epoch_max: int):
         self.eval()
         test_loss = 0
         correct = 0
         total = 0
-        test_loader = self.GetTestLoader()
-        criterion = self.GetCriterion()
+        if not hasattr(self, "test_loader"):
+            self.test_loader = self.GetTestLoader()
+        if not hasattr(self,"criterion"):
+            self.criterion = self.GetCriterion()
+        # criterion = self.GetCriterion()
         with torch.no_grad():
-            for batch_index, (inputs, targets) in enumerate(test_loader):
+            for batch_index, (inputs, targets) in enumerate(self.test_loader):
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = self(inputs)
-                loss = criterion(outputs, targets)
+                loss = self.criterion(outputs, targets)
 
                 test_loss += loss.item()
                 _, predicted = outputs.max(1)
                 total += targets.size(0)
                 correct += predicted.eq(targets).sum().item()
                 # print("一轮测试")
-                progress_bar(batch_index, len(test_loader),"Loss: %.3f | Acc: %.3f%% (%d%d)"
-                             % (test_loss/(batch_index+1),100.*correct/total, correct,total))
+                progress_bar(batch_index, len(self.test_loader), "Loss: %.3f | Acc: %.3f%% (%d%d) | %d/%d | "
+                             % (
+                                 test_loss / (batch_index + 1), 100. * correct / total, correct, total, epoch,
+                                 epoch_max))
 
-        acc = 100. * correct / total
-        # if acc > best_acc:
-        #     print("此次运算不错，保存结果。")
-        #     state = {
-        #         "net": self.stat_dict(),
-        #         "acc": acc,
-        #         "epoch": epoch
-        #     }
-        #     if not os.path.isdir('checkpoint'):
-        #         os.mkdir('checkpoint')
-        #     torch.save(state, './checkpoint/model.pth')
-        #     best_acc = acc
+        self.acc = 100. * correct / total
+        if self.acc > self.best_acc:
+            self.save_checkpoint()
 
     def GetTrainLoader(self):
         self.transform_train = transform.Compose([
@@ -196,7 +165,7 @@ class GeneralNetwork(nn.Module):
             transform.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         ])
         testset = torchvision.datasets.CIFAR10(
-            root=path, train=False, download=True,transform=self.transform_test
+            root=path, train=False, download=True, transform=self.transform_test
         )
         testloader = DataLoader(
             testset, batch_size=100, shuffle=False, num_workers=2
@@ -212,23 +181,33 @@ class GeneralNetwork(nn.Module):
 
 
 class DenseNet(GeneralNetwork):
-    def __init__(self):
-        super(DenseNet, self).__init__()
-        self.hidden_layer = nn.Linear(32 * 32 * 3, 10)
+    def __init__(self, id=None):
+        super(DenseNet, self).__init__(id=id)
+
+    def init_layers(self):
+        self.hidden_layer = nn.Linear(32 * 32 * 3, 100)
 
     def forward(self, x):
-        x = x.view(-1,32*32*3)
+        x = x.view(-1, 32 * 32 * 3)
         return self.hidden_layer(x)
 
+class DenseNet_1(GeneralNetwork):
+    def __init__(self,id=None):
+        super(DenseNet_1, self).__init__(id=id)
 
-class SimpleDenseNetwork(GeneralNetwork):
-    def __init__(self):
-        super(SimpleDenseNetwork, self).__init__()
+    def init_layers(self):
+        self.input_size = 32 * 32 * 3
+        self.hidden_layer = nn.Linear(self.input_size, 100)
+        self.output_layer = nn.Linear(100, 10)
 
+    def forward(self, x: torch.Tensor):
+        x = x.view(-1, 32*32*3)
+        x = self.hidden_layer(x)
+        return self.output_layer(x)
 
-class SimpleCNN(GeneralNetwork):
-    def __init__(self):
-        super(SimpleCNN, self).__init__()
-
-    def forward(self, x):
-        pass
+    def GetOptimizer(self, lr=1, momentum=0.9, weight_decay=5e-4):
+        return torch.optim.SGD(self.parameters(), lr=lr,
+                               momentum=momentum, weight_decay=weight_decay)
+    
+    def GetCriterion(self):
+        return nn.CrossEntropyLoss()
