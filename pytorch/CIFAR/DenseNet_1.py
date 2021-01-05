@@ -1,7 +1,7 @@
 import pytorch.CIFAR.model as model
 import torch
 import torch.nn as nn
-import torch.nn.functional as fun
+import torch.nn.functional as F
 
 # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -16,7 +16,6 @@ class DenseNet_1(model.GeneralNetwork):
         x = x.view(-1, 32*32*3)
         # x = self.hidden_layer(x)
         return self.output_layer(x)
-
 
 
 if __name__ == '__main__':

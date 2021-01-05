@@ -102,7 +102,7 @@ class GeneralNetwork(nn.Module):
             self.epoch = epoch
             self.Train(epoch, tmp + epoch_count)
             self.Test(epoch, tmp + epoch_count)
-            if self.scheduler:
+            if hasattr(self,'scheduler') and self.scheduler:
                 self.scheduler.step()
 
     def Train(self, epoch: int, epoch_max: int):
@@ -112,6 +112,7 @@ class GeneralNetwork(nn.Module):
         total = 0
         for batch_index, (inputs, targets) in enumerate(self.train_loader):
             inputs, targets = inputs.to(device), targets.to(device)
+            self.optimizer.zero_grad()
             outputs = self(inputs)
             loss = self.criterion(outputs, targets)
             loss.backward()
@@ -122,7 +123,7 @@ class GeneralNetwork(nn.Module):
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
             # print("一轮训练")
-            progress_bar(batch_index, len(self.train_loader), ' Loss: %.3f | Acc: %.3f%% (%6d%6d) | %d/%d | '
+            progress_bar(batch_index, len(self.train_loader), ' Loss: %10.3f | Acc:% 3.3f%% (%6d%6d) | %d/%d | '
                          % (train_loss / (batch_index + 1), 100. * correct / total, correct, total, epoch, epoch_max))
         self.train_loss = train_loss
 
@@ -142,7 +143,7 @@ class GeneralNetwork(nn.Module):
                 total += targets.size(0)
                 correct += predicted.eq(targets).sum().item()
                 # print("一轮测试")
-                progress_bar(batch_index, len(self.test_loader), " Loss: %.3f | Acc: %.3f%% (%6d%6d) | %d/%d | "
+                progress_bar(batch_index, len(self.test_loader), " Loss: %10.3f | Acc: %3.3f%% (%6d%6d) | %d/%d | "
                              % (
                                  test_loss / (batch_index + 1), 100. * correct / total, correct, total, epoch,
                                  epoch_max))

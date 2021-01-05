@@ -1,7 +1,7 @@
 import sys
 import time
 
-import requests
+# import requests
 import urllib.request as request
 import os
 

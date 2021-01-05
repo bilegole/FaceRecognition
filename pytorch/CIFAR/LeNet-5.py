@@ -21,18 +21,21 @@ class LeNet(model.GeneralNetwork):
         x = F.max_pool2d(x,2)
         x = F.relu(self.conv_2(x))
         x = F.max_pool2d(x,2)
-        x = x.view(-1,16*5*5)
+        x = torch.flatten(x,1)
+        # x = x.view(16*5*5,-1)
 
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
 
+    def GetCriterion(self):
+        return F.cross_entropy
+
     def GetOptimizer(self, lr=0.1, momentum=0.9, weight_decay=5e-4):
-        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr,
-                                         momentum=momentum, weight_decay=weight_decay)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=200)
-
-
+        # self.optimizer = torch.optim.SGD(self.parameters(),lr=0.01,momentum=0.9,weight_decay=weight_decay)
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,T_max=200)
+        # self.optimizer = torch.optim.Adadelta(self.parameters(),lr=0.1)
+        self.optimizer = torch.optim.Adam(self.parameters(),lr=0.0005)
 
 if __name__ == '__main__':
     print('开始初始化网络。。。')
