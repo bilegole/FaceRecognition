@@ -1,9 +1,6 @@
-import torch
 import torch.nn as nn
-from torch.utils.data.dataloader import DataLoader
-from pytorch.VOC.Utils import to_cpu, build_targets
-from pytorch.VOC import GenModel, VOC_Model
-from pytorch.VOC.layers import sconv, sshortcut, mslayer, savgpool, sConnected, sSoftmax
+from history.VOC import GenModel
+from history.VOC import sconv, mslayer, savgpool, sConnected, sSoftmax
 
 from collections import OrderedDict
 

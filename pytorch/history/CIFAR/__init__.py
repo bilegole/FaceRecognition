@@ -2,7 +2,7 @@ import pandas as pd
 import pickle
 import os
 
-CACHE_PATH = os.path.abspath('../../.cache')
+CACHE_PATH = os.path.abspath('../../../.cache')
 data = [
     'data_batch_1',
     'data_batch_2',

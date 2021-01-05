@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-import pytorch.helloworld.common as common
+import history.helloworld.common as common
 
 OUTPUT_SIZE = 10
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -42,13 +42,13 @@ class ConvNetSimple(nn.Module):
 
 
 
-def train_and_test_network(net,num_epochs=60,lr=0.1,wd=0,
+def train_and_test_network(net, num_epochs=60, lr=0.1, wd=0,
                            loss_function=nn.CrossEntropyLoss().to(device),
                            train_loader=common.get_train_loader(),
                            test_loader=common.get_test_loader()):
     sgd = torch.optim.SGD(net.parameters(),lr=lr,weight_decay=wd)
 
-    common.train_network(net,train_loader,num_epochs,loss_function,sgd)
+    common.train_network(net, train_loader, num_epochs, loss_function, sgd)
 
     print("")
 

@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from pytorch.VOC.Utils import to_cpu, build_targets
+from history.VOC import to_cpu, build_targets
 
 import sys
 

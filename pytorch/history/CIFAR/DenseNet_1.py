@@ -1,7 +1,7 @@
-import pytorch.CIFAR.model as model
+import history.CIFAR.model as model
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
 
 # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 

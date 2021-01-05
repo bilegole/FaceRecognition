@@ -1,4 +1,4 @@
-import pytorch.CIFAR.model as model
+import history.CIFAR.model as model
 
 def DenseNet():
     return model.DenseNet(id="7b86d287-4b0a-11eb-9a85-7085c27201ea").to(model.device)

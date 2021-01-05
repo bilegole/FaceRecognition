@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from pytorch.helloworld.common import (get_train_loader, IMAGE_WIDTH, train_network, get_test_loader, test_network)
+from history.helloworld.common import (get_train_loader, IMAGE_WIDTH, train_network, get_test_loader, test_network)
 
 INPUT_SIZE = IMAGE_WIDTH * IMAGE_WIDTH
 OUTPUT_SIZE = 10

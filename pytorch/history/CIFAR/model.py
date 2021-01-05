@@ -1,19 +1,18 @@
 import os
 import sys
-import time
 import torch
 import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 import torchvision
 import torchvision.transforms as transform
 import uuid
-from pytorch.CIFAR.utils import progress_bar
+from history.CIFAR.utils import progress_bar
 import copy
 
 # from .utils import progress_bar
 device = 'cuda:0' if torch.cuda.is_available() else "cpu"
 # print(device)
-path = os.path.abspath('../../.cache')
+path = os.path.abspath('../../../.cache')
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truch')
 # from ..CIFAR import
 '''
