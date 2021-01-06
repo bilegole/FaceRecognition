@@ -14,9 +14,9 @@ import torchvision.transforms as transform
 from PIL import Image
 from torchvision.datasets.vision import VisionDataset
 
-from history.VOC import GenerateID
+from history.VOC.Utils import GenerateID
 # from pytorch.VOC import progress_bar
-from history.VOC import progress_bar
+from history.VOC.Utils import progress_bar
 
 path = os.path.abspath('../../../.cache')
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
