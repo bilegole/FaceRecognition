@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from history.VOC import to_cpu, build_targets
+from history.VOC.Utils import to_cpu, build_targets
 
 import sys
 

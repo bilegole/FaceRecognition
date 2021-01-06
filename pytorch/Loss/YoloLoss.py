@@ -1,3 +1,9 @@
+# Author: yuang
+# @Time   : 2021/1/6 16:56
+# @Author : yuang
+# @Site   : www.bilegole.com
+# @File   : YoloLoss.py
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,21 +21,5 @@ from pytorch.config import cache_path
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
-class DataSetOrigin:
-    def GetTrainTransform(self):
-        pass
-
-    def GetTestTransform(self):
-        pass
-
-    def GetTrainDataset(self):
-        pass
-
-    def GetTestDataset(self):
-        pass
-
-    def GetTrainLoader(self):
-        pass
-
-    def GetTestLoader(self):
-        pass
+def YoloLossV1(inputs, targets):
+    pass

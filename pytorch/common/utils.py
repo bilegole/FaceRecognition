@@ -1,15 +1,30 @@
+import sys
+import uuid
+
 import torch
 
 
 def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
+    '''
+
+    Args:
+        pred_boxes:
+        pred_cls:
+        target:
+        anchors:
+        ignore_thres:
+
+    Returns:
+
+    '''
 
     ByteTensor = torch.cuda.ByteTensor if pred_boxes.is_cuda else torch.ByteTensor
     FloatTensor = torch.cuda.FloatTensor if pred_boxes.is_cuda else torch.FloatTensor
 
-    nB = pred_boxes.size(0) # 第0位代表的是，样本的数量。
-    nA = pred_boxes.size(1) # 第一位代表的是，预测框的数量
-    nC = pred_cls.size(-1)
-    nG = pred_boxes.size(2)
+    nB = pred_boxes.size(0)  # 第0位代表的是，样本的数量。
+    nA = pred_boxes.size(1)  # 第一位代表的是，预测框的数量
+    nC = pred_cls.size(-1)   # 种类的数量
+    nG = pred_boxes.size(2)  # 预选框的数量
 
     # Output tensors
     obj_mask = ByteTensor(nB, nA, nG, nG).fill_(0)
@@ -58,8 +73,6 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
     return iou_scores, class_mask, obj_mask, noobj_mask, tx, ty, tw, th, tcls, tconf
 
 
-
-
 def bbox_iou(box1, box2, x1y1x2y2=True):
     """
     Returns the IoU of two bounding boxes
@@ -100,3 +113,15 @@ def bbox_wh_iou(wh1, wh2):
     inter_area = torch.min(w1, w2) * torch.min(h1, h2)
     union_area = (w1 * h1 + 1e-16) + w2 * h2 - inter_area
     return inter_area / union_area
+
+
+def check_id(id):
+    if not id:
+        id = uuid.uuid1()
+        print(f'未输入uuid,指定id为:{id}')
+    elif not (isinstance(id, str) and len(id) == 36):
+        print(f'输入的id不合法,请重新输入')
+        sys.exit(0)
+    else:
+        print(f"指定id为:{id}")
+    return id

@@ -1,6 +1,6 @@
 import torch.nn as nn
 from history.VOC import GenModel
-from history.VOC import sconv, mslayer, savgpool, sConnected, sSoftmax
+from history.VOC.layers import sconv, mslayer, savgpool, sConnected, sSoftmax
 
 from collections import OrderedDict
 

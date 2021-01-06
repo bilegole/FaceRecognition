@@ -38,34 +38,39 @@ def YoloLoss(outputs, targets, num_classes:int=20, anchors=Anchors, img_dim=416,
         outputs.view(num_samples, num_anchors, num_classes + 5, grid_size, grid_size)
             .permute(0, 1, 3, 4, 2).contiguous()
     )
+    # ['样本数量','预选框的数量','网格的数量','网格的数量','不同种类的数据,包括xywh,conf,classes']
 
     # 将输出中的不同部分分来开，方便后续分别计算loss.
+    # 这些变量的形态都是,矩,但是最后一项只有一份.
     x = torch.sigmoid(prediction[..., 0])
     y = torch.sigmoid(prediction[..., 1])
     w = prediction[..., 2]
     h = prediction[..., 3]
-    pred_conf = prediction[..., 4]
-    pred_cls = torch.sigmoid(prediction[..., 5:])
+    pred_conf = prediction[..., 4]                  # 置信度,话说置信度不应该是,两份吗为什么这里是一份.
+    pred_cls = torch.sigmoid(prediction[..., 5:])   # 给出了按顺序排列的,各个框中的种类预测
 
     g = grid_size
-    stride = img_dim / grid_size
+    stride = img_dim / grid_size    # stride似乎是指一个grid的边长(以像素为单位)?
     grid_x = torch.arange(g).repeat(g, 1).view([1, 1, g, g]).type(FloatTensor)
     grid_y = torch.arange(g).repeat(g, 1).t().view([1, 1, g, g]).type(FloatTensor)
 
-    # 给出的物体框
+    # 给出的先验物体框
     scaled_anchors = FloatTensor([(a_w / stride, a_h / stride) for a_w, a_h in anchors])
-    anchor_w = scaled_anchors[:, 0:1].view((1, num_anchors, 1, 1))
+    # 这一步是,把先验框的长和宽从相对于像素,转换为相对于小方块.
+    anchor_w = scaled_anchors[:, 0:1].view((1, num_anchors, 1, 1))  # 重点是,放在了第二个维度.
     anchor_h = scaled_anchors[:, 1:2].view((1, num_anchors, 1, 1))
 
+    # 重组高维数组(n+1维度),内容是每个框的预测情况,其中的xy是绝对值,即:
+    # 在(0,0),(S,S)的范围内,
     pred_boxes = FloatTensor(prediction[..., 4].shape)
     pred_boxes[..., 0] = x.data + grid_x
     pred_boxes[..., 1] = y.data + grid_y
-    pred_boxes[..., 2] = torch.exp(w.data) * anchor_w
-    pred_boxes[..., 3] = torch.exp(h.data) * anchor_h
+    pred_boxes[..., 2] = torch.exp(w.data) * anchor_w   # 这里给出的w是取对数的,相对于anchor的比例.
+    pred_boxes[..., 3] = torch.exp(h.data) * anchor_h   # 优点是,w为正就是放大,为负就是缩小.
 
     output = torch.cat((
-        pred_boxes.view(num_samples, -1, 4) * stride,
-        pred_conf.view(num_samples, -1, 1),
+        pred_boxes.view(num_samples, -1, 4) * stride,   # 这里乘stride是为了从相对于网格转化为相对于像素.
+        pred_conf.view(num_samples, -1, 1),             #
         pred_cls.view(num_samples, 1, num_classes),
     ), 1)
 
@@ -91,3 +96,4 @@ def YoloLoss(outputs, targets, num_classes:int=20, anchors=Anchors, img_dim=416,
     loss_cls = LossBCE(pred_cls[obj_mask], tcls[obj_mask])
 
     total_loss = loss_box + loss_conf + loss_cls
+    return total_loss
