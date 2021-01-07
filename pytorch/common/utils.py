@@ -9,9 +9,9 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
 
     Args:
         pred_boxes:
-        pred_cls:
-        target:
-        anchors:
+        pred_cls:   计算出来的，对种类的预测
+        target:     标注出来的物品框
+        anchors:    预设的方框。
         ignore_thres:
 
     Returns:
@@ -24,7 +24,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
     nB = pred_boxes.size(0)  # 第0位代表的是，样本的数量。
     nA = pred_boxes.size(1)  # 第一位代表的是，预测框的数量
     nC = pred_cls.size(-1)   # 种类的数量
-    nG = pred_boxes.size(2)  # 预选框的数量
+    nG = pred_boxes.size(2)  # 网格一边数量
 
     # Output tensors
     obj_mask = ByteTensor(nB, nA, nG, nG).fill_(0)

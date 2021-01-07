@@ -18,7 +18,7 @@ Anchors = (
 )
 
 
-def YoloLoss(outputs, targets, num_classes:int=20, anchors=Anchors, img_dim=416,
+def YoloLoss(outputs, targets, num_classes: int = 20, anchors=Anchors, img_dim=416,
              ignore_thres: float = 0.5):
     obj_scale = 1
     noobj_scale = 100
@@ -46,11 +46,11 @@ def YoloLoss(outputs, targets, num_classes:int=20, anchors=Anchors, img_dim=416,
     y = torch.sigmoid(prediction[..., 1])
     w = prediction[..., 2]
     h = prediction[..., 3]
-    pred_conf = prediction[..., 4]                  # 置信度,话说置信度不应该是,两份吗为什么这里是一份.
-    pred_cls = torch.sigmoid(prediction[..., 5:])   # 给出了按顺序排列的,各个框中的种类预测
+    pred_conf = prediction[..., 4]  # 置信度,话说置信度不应该是,两份吗为什么这里是一份.
+    pred_cls = torch.sigmoid(prediction[..., 5:])  # 给出了按顺序排列的,各个框中的种类预测
 
     g = grid_size
-    stride = img_dim / grid_size    # stride似乎是指一个grid的边长(以像素为单位)?
+    stride = img_dim / grid_size  # stride似乎是指一个grid的边长(以像素为单位)?
     grid_x = torch.arange(g).repeat(g, 1).view([1, 1, g, g]).type(FloatTensor)
     grid_y = torch.arange(g).repeat(g, 1).t().view([1, 1, g, g]).type(FloatTensor)
 
@@ -65,12 +65,12 @@ def YoloLoss(outputs, targets, num_classes:int=20, anchors=Anchors, img_dim=416,
     pred_boxes = FloatTensor(prediction[..., 4].shape)
     pred_boxes[..., 0] = x.data + grid_x
     pred_boxes[..., 1] = y.data + grid_y
-    pred_boxes[..., 2] = torch.exp(w.data) * anchor_w   # 这里给出的w是取对数的,相对于anchor的比例.
-    pred_boxes[..., 3] = torch.exp(h.data) * anchor_h   # 优点是,w为正就是放大,为负就是缩小.
+    pred_boxes[..., 2] = torch.exp(w.data) * anchor_w  # 这里给出的w是取对数的,相对于anchor的比例.
+    pred_boxes[..., 3] = torch.exp(h.data) * anchor_h  # 优点是,w为正就是放大,为负就是缩小.
 
     output = torch.cat((
-        pred_boxes.view(num_samples, -1, 4) * stride,   # 这里乘stride是为了从相对于网格转化为相对于像素.
-        pred_conf.view(num_samples, -1, 1),             #
+        pred_boxes.view(num_samples, -1, 4) * stride,  # 这里乘stride是为了从相对于网格转化为相对于像素.
+        pred_conf.view(num_samples, -1, 1),  #
         pred_cls.view(num_samples, 1, num_classes),
     ), 1)
 
