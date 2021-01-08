@@ -33,7 +33,7 @@ class VOCDataSet(DataSetOrigin):
     def __init__(self, year: str = '2012'):
         super(VOCDataSet, self).__init__()
         self.year = year
-        self.SizeOfPictureByPixel = 416
+        self.SizeOfPictureByPixel = 448
 
         self.Classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
 
@@ -52,7 +52,7 @@ class VOCDataSet(DataSetOrigin):
         )
 
     def GetTrainLoader(self):
-        return DataLoader(self.GetTrainDataset(), batch_size=1000, shuffle=True, collate_fn=self.GetTrainCollectFun)
+        return DataLoader(self.GetTrainDataset(), batch_size=10, shuffle=True, collate_fn=self.GetTrainCollectFun)
 
     def GetTrainCollectFun(self, batch: Dict):
         # print(1)

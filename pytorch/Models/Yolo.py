@@ -24,30 +24,30 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 class Yolo_v1(GeneralNetwork):
     def init_layers(self):
-        self.Seq_1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=5),
-            nn.MaxPool2d(2, stride=2)
+        self.Seq_1 = nn.Sequential(  # out:num_sample, 64, 110, 110
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7),  # (448-7)/2+1=221
+            nn.MaxPool2d(2, stride=2)  # (221-2)/2+1=110
         )
-        self.Seq_2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=192, kernel_size=3),
-            nn.MaxPool2d(2, stride=2)
+        self.Seq_2 = nn.Sequential(  # out:num_sample,192,54,54
+            nn.Conv2d(in_channels=64, out_channels=192, kernel_size=3),  # (102-3)+1=100
+            nn.MaxPool2d(2, stride=2)  # (100-2)/2+1=50
         )
-        self.Seq_3 = nn.Sequential(
-            nn.Conv2d(in_channels=192, out_channels=128, kernel_size=1),
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1),
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),
-            nn.MaxPool2d(2, stride=2)
+        self.Seq_3 = nn.Sequential(  # out:num_sample,512,25,25
+            nn.Conv2d(in_channels=192, out_channels=128, kernel_size=1),  # 50
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3),  # 50-3+1=48
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1),  # 48
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),  # (48-3)/2+1=23
+            nn.MaxPool2d(2, stride=2)  # (23-2)/2+1=11
         )
-        self.subSeq_4 = nn.Sequential(
-            nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1),
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1)
+        self.subSeq_4 = nn.Sequential(# out:num_sample,1024,11,11
+            nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1),  #
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3)
         )
         self.Seq_4 = nn.Sequential(
             self.subSeq_4, self.subSeq_4, self.subSeq_4, self.subSeq_4,
             nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1),
             nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3),
-            nn.MaxPool2d(2, stride=2)
+            nn.MaxPool2d(2, stride=2)  # 32
         )
         self.subSeq_5 = nn.Sequential(
             nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=1),
@@ -56,19 +56,19 @@ class Yolo_v1(GeneralNetwork):
         self.Seq_5 = nn.Sequential(
             self.subSeq_5, self.subSeq_5,
             nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3),
-            nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, stride=2)
+            nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=3, stride=2)  # 64
         )
-        self.Seq_6 = nn.Sequential(
-            nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3),
-            nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3)
-        )
-        self.fc_1 = nn.Linear(in_features=1024, out_features=4096)
-        self.fc_2 = nn.Linear(in_features=4096, out_features=30)
+        # self.Seq_6 = nn.Sequential(
+        #     nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3),
+        #     nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3)
+        # )
+        # self.fc_1 = nn.Linear(in_features=1024, out_features=4096)
+        # self.fc_2 = nn.Linear(in_features=4096, out_features=30)
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
             nn.ReLU(True),
             nn.Dropout(),
-            nn.Linear(4096, 1047)
+            nn.Linear(4096, 1470)
         )
 
     def forward(self, x):
@@ -77,8 +77,8 @@ class Yolo_v1(GeneralNetwork):
         x = self.Seq_3(x)
         x = self.Seq_4(x)
         x = self.Seq_5(x)
-        x = x.view(x.size(0),-1)
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
-        x = F.sigmoid(x)
-        x = x.view(-1,7,7,30)
+        x = torch.sigmoid(x)
+        x = x.view(-1, 7, 7, 30)
         return x
