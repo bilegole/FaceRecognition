@@ -16,6 +16,12 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 class DataSetOrigin:
+    def initTrainLoader(self):
+        self.trainloader = self.GetTrainLoader()
+
+    def initTestLoader(self):
+        self.testloader = self.GetTestLoader()
+
     def GetTrainTransform(self):
         pass
 

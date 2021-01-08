@@ -35,7 +35,7 @@ class VOCDataSet(DataSetOrigin):
         self.year = year
         self.SizeOfPictureByPixel = 416
 
-        self.Classes = []
+        self.Classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
 
     def GetTrainTransform(self):
         return transform.Compose([
@@ -48,7 +48,7 @@ class VOCDataSet(DataSetOrigin):
             year=self.year,
             image_set='train',
             download=True,
-            transform=self.GetTrainTransform()
+            # transform=self.GetTrainTransform()
         )
 
     def GetTrainLoader(self):
@@ -64,20 +64,22 @@ class VOCDataSet(DataSetOrigin):
             image: Image
             target: Dict
 
-            image_size: Tuple[int, int] = image.shape[1:]
+            image_size: Tuple[int, int] = image.size
             image_to_scale = (self.SizeOfPictureByPixel / i for i in image_size)
 
-            image.resize((self.SizeOfPictureByPixel, self.SizeOfPictureByPixel))
-            images.append(image)
+            _image = image.resize((self.SizeOfPictureByPixel, self.SizeOfPictureByPixel))
+            trans = self.GetTrainTransform()
+            image_tensor = trans(_image)
+            images.append(image_tensor)
 
             objects = target['annotation']['object']
             label_tensor = FloatTensor(len(objects), 6).fill_(0)
             for i, object in enumerate(objects):
                 object: Dict
-                xmin = int(object['xmin'])
-                xmax = int(object['xmax'])
-                ymin = int(object['ymin'])
-                ymax = int(object['ymax'])
+                xmin = int(object['bndbox']['xmin'])
+                xmax = int(object['bndbox']['xmax'])
+                ymin = int(object['bndbox']['ymin'])
+                ymax = int(object['bndbox']['ymax'])
                 label = object['name']
 
                 label_num = self.Classes.index(label)
@@ -91,8 +93,9 @@ class VOCDataSet(DataSetOrigin):
                 label_tensor[i, :] = torch.tensor([index, label_num, x, y, w, h])
             labels.append(label_tensor)
 
-        _images = torch.stack(images, dim=0)
-        _labels = torch.stack(labels, dim=0)
+        # _images = torch.stack(images, dim=0)
+        _labels = torch.cat(labels, dim=0)
+        _images = torch.stack(images,dim=0)
         return _images, _labels
 
     def GetTestTransform(self):
