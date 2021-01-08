@@ -52,12 +52,45 @@ class Anchor():
     pass
 
 
+class YoloLoss():
+    def __init__(self):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        pass
+
+    def check(self, output: Tensor):
+        pass
+
+    def process_outputs(self):
+        pass
+
+    def process_targets(self):
+        pass
+
+    def calculate(self):
+        pass
+
+
 Anchors = Tuple[Anchor]
 ByteTensor = torch.cuda.ByteTensor if torch.cuda.is_available() else torch.ByteTensor
 FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
 
-class YoloLoss:
+class YoloLoss_v1(YoloLoss):
+    def check(self, output: Tensor):
+        assert isinstance(output, Tensor)
+        assert output.shape[1] == 7
+        assert output.shape[2] == 7
+        assert output.shape[3] == 30
+        self.outputs = output
+
+    def process_outputs(self):
+        # px =
+        pass
+
+
+class YoloLoss_v3:
     def __init__(self, anchors: Anchors, classes: dict, sample_size: int, grid_size: int, img_dim: int = 416,
                  ignore_scale: float = 0.5, lambda_obj: int = 1, lambda_noobj=100):
         self.anchors: Anchors = anchors
@@ -175,12 +208,3 @@ class YoloLoss:
 
         tconf = mask_obj.float()
         return mask_obj, mask_noobj, tx, ty, tw, th, tcls, tconf
-
-    # def desize(self):
-#     '''self.outputs
-#     Returns:
-#         0: 一个batch的样本的数量。
-#         1: 预选框的数量
-#         2,3: 网格的边长
-#         4: 预测信息的长度，事实上，从前往后分别是:[x,y,w,h,置信度,对不同种类的预测]
-#     '''
