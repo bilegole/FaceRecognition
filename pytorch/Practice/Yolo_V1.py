@@ -65,5 +65,5 @@ if __name__ == '__main__':
     # x4 = net.Seq_4(x3)
     # x5 = net.Seq_5(x4)
     # output = net(input)
-    net = YoloV1(dry=True, batch_size=20).to(device)
+    net = YoloV1(dry=False, batch_size=20).to(device)
     net.train_and_test(epoch_count=100)
