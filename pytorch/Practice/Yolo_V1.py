@@ -25,8 +25,8 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 class YoloV1(Yolo_v1, VOCDataSet):
-    def __init__(self):
-        Yolo_v1.__init__(self)
+    def __init__(self, dry: bool = False):
+        Yolo_v1.__init__(self, dry=dry)
         VOCDataSet.__init__(self)
 
     def dir_name(self):
@@ -35,19 +35,30 @@ class YoloV1(Yolo_v1, VOCDataSet):
     def GetCriterion(self):
         return YoloLoss_v1(num_sample=10)
 
+    # def displayTrainStatus(self, inputs, outputs, targets, loss):
+    #     print('完成了一轮Train')
+
+    # def displayTestStatus(self, inputs, outputs, targets, loss):
+    #     print('完成了一轮Test')
+
+    def displayEpochStatus(self):
+        print('完成了一轮epoch')
+
 
 if __name__ == '__main__':
-    net = YoloV1().to(device)
-    print('End')
-    loader = net.GetTrainLoader()
-    datas = [i for i in loader]
-    input, target = datas[0]
-    del loader
-    del datas
-    input = input.to(device)
-    x1 = net.Seq_1(input)
-    x2 = net.Seq_2(x1)
-    x3 = net.Seq_3(x2)
-    x4 = net.Seq_4(x3)
-    x5 = net.Seq_5(x4)
-    output = net(input)
+    # net = YoloV1().to(device)
+    # print('End')
+    # loader = net.GetTrainLoader()
+    # datas = [i for i in loader]
+    # input, target = datas[0]
+    # del loader
+    # del datas
+    # input = input.to(device)
+    # x1 = net.Seq_1(input)
+    # x2 = net.Seq_2(x1)
+    # x3 = net.Seq_3(x2)
+    # x4 = net.Seq_4(x3)
+    # x5 = net.Seq_5(x4)
+    # output = net(input)
+    net = YoloV1(dry=True).to(device)
+    net.train_and_test()

@@ -15,13 +15,14 @@ device = 'cuda:0' if torch.cuda.is_available() else "cpu"
 
 
 class GeneralNetwork(nn.Module):
-    def __init__(self, model_id=None, cache_path: str = cache_path):
+    def __init__(self, model_id=None, cache_path: str = cache_path, dry: bool = False):
         super(GeneralNetwork, self).__init__()
         self.model_loaded = True
         self.id = self.check_id(model_id)
         self.cache_path = cache_path
         self.base_path = os.path.join(self.cache_path, self.dir_name())
         self.checkpoint = os.path.join(self.base_path, 'checkpoint')
+        self.dry: bool = dry
         if not os.path.exists(self.base_path):
             os.mkdir(self.base_path)
         if not os.path.exists(self.checkpoint):
@@ -111,6 +112,9 @@ class GeneralNetwork(nn.Module):
             self.Test()
             if hasattr(self, 'scheduler') and self.scheduler:
                 self.scheduler.step()
+            self.displayEpochStatus()
+            if self.dry==True:
+                break
 
     def Train(self):
         self.train()
@@ -124,6 +128,8 @@ class GeneralNetwork(nn.Module):
             loss.backward()
             self.optimizer.step()
             self.displayTrainStatus(inputs=inputs, outputs=outputs, targets=targets, loss=loss)
+            if self.dry:
+                break
 
     def displayTrainStatus(self, inputs, outputs, targets, loss):
         pass
@@ -138,8 +144,13 @@ class GeneralNetwork(nn.Module):
                 outputs = self(inputs)
                 loss = self.criterion(outputs, targets)
                 self.displayTestStatus(inputs, outputs, targets, loss)
+                if self.dry:
+                    break
 
     def displayTestStatus(self, inputs, outputs, targets, loss):
+        pass
+
+    def displayEpochStatus(self):
         pass
 
     def forward(self, x):

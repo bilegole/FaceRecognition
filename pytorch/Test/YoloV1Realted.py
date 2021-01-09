@@ -68,8 +68,11 @@ class WithModelCase(unittest.TestCase):
         # ----------------------------
 
     def test_train(self):
-        model = P.YoloV1().to(device)
+        print('111')
+        model = P.YoloV1(dry=True).to(device)
+        print('模型初始化完成.')
         model.train_and_test(10)
+        print('test_train函数结束.')
 
 
 class V1LossCase(unittest.TestCase):

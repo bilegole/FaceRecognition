@@ -39,7 +39,7 @@ class Yolo_v1(GeneralNetwork):
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3),  # (48-3)/2+1=23
             nn.MaxPool2d(2, stride=2)  # (23-2)/2+1=11
         )
-        self.subSeq_4 = nn.Sequential(# out:num_sample,1024,11,11
+        self.subSeq_4 = nn.Sequential(  # out:num_sample,1024,11,11
             nn.Conv2d(in_channels=512, out_channels=256, kernel_size=1),  #
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3)
         )
@@ -70,6 +70,19 @@ class Yolo_v1(GeneralNetwork):
             nn.Dropout(),
             nn.Linear(4096, 1470)
         )
+
+    def displayTrainStatus(self, inputs, outputs, targets, loss):
+        batch_index = self.curr_index + 1
+        max_index = self.max_index
+        print(f'\r完成了第{batch_index}/{max_index}个train batch,\tloss:{loss:4.2f}', end='')
+        if batch_index == max_index or self.dry == True:
+            print("\n一个epoch训练完成.")
+
+    def displayTestStatus(self, inputs, outputs, targets, loss):
+        batch_index = self.curr_index + 1
+        max_index = self.max_index
+        if batch_index == max_index or self.dry == True:
+            print("一个epoch测试完成")
 
     def forward(self, x):
         x = self.Seq_1(x)

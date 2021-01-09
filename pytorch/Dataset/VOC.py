@@ -117,7 +117,7 @@ class VOCDataSet(DataSetOrigin):
         )
 
     def GetTestLoader(self):
-        return DataLoader(self.GetTestDataset(), batch_size=100, shuffle=False, collate_fn=self.GetTrainCollectFun)
+        return DataLoader(self.GetTestDataset(), batch_size=32, shuffle=False, collate_fn=self.GetTrainCollectFun)
 
     def TestCollectFun(self, batch: Tuple):
         images, labels = batch
