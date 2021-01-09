@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from pytorch.config import cache_path
 from pytorch.Models.Yolo import Yolo_v1
 from pytorch.Dataset.VOC import VOCDataSet
+from pytorch.Loss.YoloLoss import YoloLoss_v1
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -31,7 +32,8 @@ class YoloV1(Yolo_v1, VOCDataSet):
     def dir_name(self):
         return 'test'
 
-    pass
+    def GetCriterion(self):
+        return YoloLoss_v1(num_sample=10)
 
 
 if __name__ == '__main__':

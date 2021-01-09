@@ -32,10 +32,14 @@ FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Flo
 class VOCDataSet(DataSetOrigin):
     def __init__(self, year: str = '2012'):
         super(VOCDataSet, self).__init__()
+        self.data_loaded = True
         self.year = year
         self.SizeOfPictureByPixel = 448
 
-        self.Classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+        self.Classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
+                        "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train",
+                        "tvmonitor"]
+        print('VOCDataset 初始化完成.')
 
     def GetTrainTransform(self):
         return transform.Compose([
@@ -52,9 +56,9 @@ class VOCDataSet(DataSetOrigin):
         )
 
     def GetTrainLoader(self):
-        return DataLoader(self.GetTrainDataset(), batch_size=10, shuffle=True, collate_fn=self.GetTrainCollectFun)
+        return DataLoader(self.GetTrainDataset(), batch_size=10, shuffle=False, collate_fn=self.GetTrainCollectFun)
 
-    def GetTrainCollectFun(self, batch: Dict):
+    def GetTrainCollectFun(self, batch: List):
         # print(1)
         # print(batch)
         images = []
@@ -95,23 +99,25 @@ class VOCDataSet(DataSetOrigin):
 
         # _images = torch.stack(images, dim=0)
         _labels = torch.cat(labels, dim=0)
-        _images = torch.stack(images,dim=0)
+        _images = torch.stack(images, dim=0)
         return _images, _labels
 
     def GetTestTransform(self):
-        pass
+        return transform.Compose([
+            transform.ToTensor()
+        ])
 
     def GetTestDataset(self):
         return datasets.VOCDetection(
             cache_path,
             year=self.year,
-            image_set='test',
+            image_set='val',
             download=True,
-            transform=self.GetTestTransform()
+            # transform=self.GetTestTransform()
         )
 
     def GetTestLoader(self):
-        DataLoader(self.GetTestLoader(), batch_size=1000, shuffle=True, collate_fn=self.TestCollectFun)
+        return DataLoader(self.GetTestDataset(), batch_size=100, shuffle=False, collate_fn=self.GetTrainCollectFun)
 
     def TestCollectFun(self, batch: Tuple):
         images, labels = batch

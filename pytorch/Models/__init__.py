@@ -15,13 +15,17 @@ device = 'cuda:0' if torch.cuda.is_available() else "cpu"
 
 
 class GeneralNetwork(nn.Module):
-    def __init__(self, model_id, cache_path: str = cache_path):
+    def __init__(self, model_id=None, cache_path: str = cache_path):
         super(GeneralNetwork, self).__init__()
         self.model_loaded = True
         self.id = self.check_id(model_id)
         self.cache_path = cache_path
         self.base_path = os.path.join(self.cache_path, self.dir_name())
         self.checkpoint = os.path.join(self.base_path, 'checkpoint')
+        if not os.path.exists(self.base_path):
+            os.mkdir(self.base_path)
+        if not os.path.exists(self.checkpoint):
+            os.mkdir(self.checkpoint)
 
         self.init_layers()
         self.optimizer, self.scheduler = self.GetOptimizer()
@@ -97,6 +101,8 @@ class GeneralNetwork(nn.Module):
     def train_and_test(self, epoch_count: int = 1):
         if not hasattr(self, 'data_loaded'):
             raise Exception("未导入数据.")
+        self.initTrainLoader()
+        self.initTestLoader()
         start = self.epoch + 1
         end = self.epoch + epoch_count
         for epoch in range(start, end + 1):
@@ -108,7 +114,7 @@ class GeneralNetwork(nn.Module):
 
     def Train(self):
         self.train()
-        self.max_index = len(self.tarinloader)
+        self.max_index = len(self.trainloader)
         for batch_index, (inputs, targets) in enumerate(self.trainloader):
             self.curr_index = batch_index
             inputs, targets = inputs.to(device), targets.to(device)

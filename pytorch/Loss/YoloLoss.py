@@ -22,6 +22,7 @@ from pytorch.common.utils import bbox_iou, bbox_wh_iou
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 Tensor = torch.Tensor
+BoolTensor = torch.BoolTensor
 
 
 # class Output():
@@ -95,26 +96,26 @@ class YoloLoss_v1(YoloLoss):
         # 处理并提取预测数据
         poutput = self.process_outputs()
         try:
-            px = poutput['px']
-            py = poutput['py']
-            pw = poutput['pw']
-            ph = poutput['ph']
-            pconf = poutput['pconf']
-            pcls = poutput['pcls']
+            px = poutput['px'].to(device)
+            py = poutput['py'].to(device)
+            pw = poutput['pw'].to(device)
+            ph = poutput['ph'].to(device)
+            pconf = poutput['pconf'].to(device)
+            pcls = poutput['pcls'].to(device)
         except:
             raise Exception('YoloLoss v1的loss函数中，解包output的函数的返回值转换出了问题.')
 
         # 处理并提取标签数据
         ptarget = self.process_targets(target)
         try:
-            tx = ptarget['tx']
-            ty = ptarget['ty']
-            tw = ptarget['tw']
-            th = ptarget['th']
-            tcls = ptarget['tcls']
-            tconf = ptarget['tconf']
-            mask_obj = ptarget['mask_obj']
-            mask_noobj = ptarget['mask_noobj']
+            tx = ptarget['tx'].to(device)
+            ty = ptarget['ty'].to(device)
+            tw = ptarget['tw'].to(device)
+            th = ptarget['th'].to(device)
+            tcls = ptarget['tcls'].to(device)
+            tconf = ptarget['tconf'].to(device)
+            mask_obj = ptarget['mask_obj'].to(device)
+            mask_noobj = ptarget['mask_noobj'].to(device)
         except:
             raise Exception('YoloLoss v1的loss函数中，解包target的函数的返回值转换出了问题.')
 
@@ -130,7 +131,7 @@ class YoloLoss_v1(YoloLoss):
         ### 求conf_loss
         LossBCE = nn.BCELoss()
         loss_conf_obj = LossBCE(pconf[mask_obj], tconf[mask_obj])
-        loss_conf_noobj = LossBCE(pconf[mask_obj], tconf[mask_obj])
+        loss_conf_noobj = LossBCE(pconf[mask_noobj], tconf[mask_noobj])
         loss_conf = self.lambda_obj * loss_conf_obj + self.lambda_noobj * loss_conf_noobj
 
         ### 求class_loss
@@ -141,9 +142,12 @@ class YoloLoss_v1(YoloLoss):
 
     def check(self, output: Tensor):
         assert isinstance(output, Tensor)
+        # assert output.shape[0] == self.num_sample
+        if self.num_sample != output.shape[0]:
+            self.num_sample = output.shape[0]
         assert output.shape[1] == self.grid_size
         assert output.shape[2] == self.grid_size
-        assert output.shape[3] == self.num_sample
+        assert output.shape[3] == self.num_classes + 10
         self.outputs = output
 
     def process_outputs(self) -> Dict[str, Tensor]:
@@ -158,7 +162,7 @@ class YoloLoss_v1(YoloLoss):
                     elif self.outputs[index, i, j, 4] > self.outputs[index, i, j, 9]:
                         pred_box[index, i, j, :5] = self.outputs[index, i, j, :5]
                     else:
-                        pred_box[index, i, j] = self.outputs[index, i, j, 5:10]
+                        pred_box[index, i, j, :5] = self.outputs[index, i, j, 5:10]
 
         pred_x = pred_box[:, :, :, 0]
         pred_y = pred_box[:, :, :, 1]
@@ -176,9 +180,10 @@ class YoloLoss_v1(YoloLoss):
         }
 
     def process_targets(self, target: Tensor) -> Dict[str, Tensor]:
+        # torch.BoolTensor
         mask_shape = (self.num_sample, self.grid_size, self.grid_size)
-        mask_obj = ByteTensor(*mask_shape).fill_(0)
-        mask_noobj = ByteTensor(*mask_shape).fill_(1)
+        mask_obj = BoolTensor(*mask_shape).fill_(0)
+        mask_noobj = BoolTensor(*mask_shape).fill_(1)
         tx = FloatTensor(*mask_shape).fill_(0)
         ty = FloatTensor(*mask_shape).fill_(0)
         tw = FloatTensor(*mask_shape).fill_(0)
@@ -192,8 +197,8 @@ class YoloLoss_v1(YoloLoss):
         gw, gh = gwh.t()
         gi, gj = gxy.long().t()
 
-        mask_obj[image_index, gi, gj] = 1
-        mask_noobj[image_index, gi, gj] = 0
+        mask_obj[image_index, gi, gj] = True
+        mask_noobj[image_index, gi, gj] = False
 
         tx[image_index, gi, gj] = gx - gx.floor()
         ty[image_index, gi, gj] = gy - gy.floor()
