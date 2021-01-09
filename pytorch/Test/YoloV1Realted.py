@@ -27,14 +27,16 @@ class WithModelCase(unittest.TestCase):
         dataset = model.GetTrainDataset()
         dataset_generated = time.time()
         print(f"数据库初始化耗时{dataset_generated-model_inited}秒")
-        batch = [dataset.__getitem__(i) for i in range(10)]
-        processed_batch = model.GetTrainCollectFun(batch)
-        # for inputs, targets in loader:
-        inputs, targets = processed_batch
-        inputs: Tensor
-        targets: Tensor
-        inputs, targets = inputs.to(device), targets.to(device)
-        data_prepared = time.time()
+        # batch = [dataset.__getitem__(i) for i in range(10)]
+        # processed_batch = model.GetTrainCollectFun(batch)
+        # inputs, targets = processed_batch
+        loader = model.GetTrainLoader()
+        for inputs, targets in loader:
+            inputs: Tensor
+            targets: Tensor
+            inputs, targets = inputs.to(device), targets.to(device)
+            data_prepared = time.time()
+            break
         print(f"生成一个batch耗时{data_prepared-dataset_generated}秒")
         # ----------------------------
         self.assertEqual(Tensor, type(inputs))
