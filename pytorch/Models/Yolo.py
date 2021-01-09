@@ -22,6 +22,7 @@ from pytorch.Models import GeneralNetwork
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
+# TODO:计算 mAP.
 class Yolo_v1(GeneralNetwork):
     def init_layers(self):
         self.Seq_1 = nn.Sequential(  # out:num_sample, 64, 110, 110
@@ -84,7 +85,7 @@ class Yolo_v1(GeneralNetwork):
         batch_index = self.curr_index + 1
         max_index = self.max_index
         ave_loss = self.train_loss_total / batch_index
-        print(f'\r完成了第{batch_index}/{max_index}个train batch,\tloss:{loss/outputs.size(0):4.2f}', end='')
+        print(f'\r完成了第{batch_index}/{max_index}个train batch,\tloss:{loss / outputs.size(0):4.2f}', end='')
         if batch_index == max_index or self.dry == True:
             print(f"\n一个epoch训练完成,平均loss为:{self.train_loss_total / len(self.trainloader):3.2f}")
             self.train_loss_total = 0
