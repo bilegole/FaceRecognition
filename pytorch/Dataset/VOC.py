@@ -30,11 +30,12 @@ FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Flo
 
 # TODO:完成 VOCDataSet.
 class VOCDataSet(DataSetOrigin):
-    def __init__(self, year: str = '2012'):
+    def __init__(self, year: str = '2012', batch_size: int = 10):
         super(VOCDataSet, self).__init__()
         self.data_loaded = True
         self.year = year
         self.SizeOfPictureByPixel = 448
+        self.batch_size = batch_size
 
         self.Classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
                         "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train",
@@ -56,7 +57,8 @@ class VOCDataSet(DataSetOrigin):
         )
 
     def GetTrainLoader(self):
-        return DataLoader(self.GetTrainDataset(), batch_size=10, shuffle=False, collate_fn=self.GetTrainCollectFun)
+        return DataLoader(self.GetTrainDataset(), batch_size=self.batch_size, shuffle=False,
+                          collate_fn=self.GetTrainCollectFun)
 
     def GetTrainCollectFun(self, batch: List):
         # print(1)

@@ -80,7 +80,7 @@ FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Flo
 
 class YoloLoss_v1(YoloLoss):
     def __init__(self, num_sample: int, grid_size: int = 7, num_classes: int = 20, num_anchors: int = 2,
-                 thred_conf: float = 0.3, lambda_obj: int = 1, lambda_noobj: int = 10):
+                 thred_conf: float = 0.3, lambda_obj: int = 5, lambda_noobj: int = 0.5):
         super(YoloLoss_v1, self).__init__()
         self.num_sample = num_sample
         self.num_classes = num_classes
@@ -124,15 +124,15 @@ class YoloLoss_v1(YoloLoss):
         LossMSE = nn.MSELoss()
         loss_x = LossMSE(px[mask_obj], tx[mask_obj])
         loss_y = LossMSE(py[mask_obj], ty[mask_obj])
-        loss_w = LossMSE(pw[mask_obj], tw[mask_obj])
-        loss_h = LossMSE(ph[mask_obj], th[mask_obj])
-        loss_box = loss_x + loss_y + loss_w + loss_h
+        loss_w = LossMSE(torch.sqrt(pw[mask_obj]), torch.sqrt(tw[mask_obj]))
+        loss_h = LossMSE(torch.sqrt(ph[mask_obj]), torch.sqrt(th[mask_obj]))
+        loss_box = (loss_x + loss_y + loss_w + loss_h) * self.lambda_obj
 
         ### 求conf_loss
         LossBCE = nn.BCELoss()
         loss_conf_obj = LossBCE(pconf[mask_obj], tconf[mask_obj])
         loss_conf_noobj = LossBCE(pconf[mask_noobj], tconf[mask_noobj])
-        loss_conf = self.lambda_obj * loss_conf_obj + self.lambda_noobj * loss_conf_noobj
+        loss_conf = loss_conf_obj + self.lambda_noobj * loss_conf_noobj
 
         ### 求class_loss
         loss_cls = LossBCE(pcls[mask_obj], tcls[mask_obj])

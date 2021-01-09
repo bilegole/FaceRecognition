@@ -113,10 +113,11 @@ class GeneralNetwork(nn.Module):
             if hasattr(self, 'scheduler') and self.scheduler:
                 self.scheduler.step()
             self.displayEpochStatus()
-            if self.dry==True:
+            if self.dry == True:
                 break
 
     def Train(self):
+        self.train_loss_total = 0
         self.train()
         self.max_index = len(self.trainloader)
         for batch_index, (inputs, targets) in enumerate(self.trainloader):
@@ -136,6 +137,7 @@ class GeneralNetwork(nn.Module):
 
     def Test(self):
         self.eval()
+        self.test_loss_total = 0
         with torch.no_grad():
             self.max_index = len(self.testloader)
             for batch_index, (inputs, targets) in enumerate(self.testloader):
