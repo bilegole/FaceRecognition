@@ -51,7 +51,7 @@ class VOCDataSet(DataSetOrigin):
             cache_path,
             year=self.year,
             image_set='train',
-            download=True,
+            download=False,
             # transform=self.GetTrainTransform()
         )
 
@@ -112,7 +112,7 @@ class VOCDataSet(DataSetOrigin):
             cache_path,
             year=self.year,
             image_set='val',
-            download=True,
+            download=False,
             # transform=self.GetTestTransform()
         )
 

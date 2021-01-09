@@ -1,3 +1,4 @@
+import time
 import unittest
 import torch
 import torchvision.models as models
@@ -16,11 +17,16 @@ device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 class WithModelCase(unittest.TestCase):
     def test_dry_step(self):
+        start_time = time.time()
         model: P.YoloV1 = P.YoloV1().to(device)
+        model_inited = time.time()
+        print(f'初始化模型耗时{model_inited-start_time:3f}秒')
         self.assertEqual(type(model), P.YoloV1)
         self.assertTrue(hasattr(model, 'GetTrainLoader'), 'model 没有GetTrainLoader函数，疑似继承不正确.')
         # loader = model.GetTrainLoader()
         dataset = model.GetTrainDataset()
+        dataset_generated = time.time()
+        print(f"数据库初始化耗时{dataset_generated-model_inited}秒")
         batch = [dataset.__getitem__(i) for i in range(10)]
         processed_batch = model.GetTrainCollectFun(batch)
         # for inputs, targets in loader:
@@ -28,12 +34,16 @@ class WithModelCase(unittest.TestCase):
         inputs: Tensor
         targets: Tensor
         inputs, targets = inputs.to(device), targets.to(device)
+        data_prepared = time.time()
+        print(f"生成一个batch耗时{data_prepared-dataset_generated}秒")
         # ----------------------------
         self.assertEqual(Tensor, type(inputs))
         self.assertEqual(Tensor, type(targets))
         self.assertEqual(10, inputs.shape[0])
         # ----------------------------
         outputs: Tensor = model(inputs)
+        output_cal = time.time()
+        print(f"正向传播耗时{output_cal-data_prepared}秒")
         self.assertEqual(Tensor, type(outputs))
         self.assertEqual(10, outputs.shape[0])
         self.assertEqual(7, outputs.shape[1])
@@ -42,11 +52,17 @@ class WithModelCase(unittest.TestCase):
 
         # ----------------------------
         loss = model.criterion(outputs, targets)
+        loss_cal = time.time()
+        print(f'计算loss，耗时{loss_cal-output_cal}秒')
         loss.backward()
+        backward = time.time()
+        print(f'反向传播，耗时{backward-loss_cal}秒')
         print(loss)
 
         optim, sche = model.GetOptimizer()
         optim.step()
+        optim_cal = time.time()
+        print(f"优化模型，一步耗时{optim_cal-backward}秒")
         # ----------------------------
 
     def test_train(self):
