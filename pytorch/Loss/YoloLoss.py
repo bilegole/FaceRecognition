@@ -65,7 +65,7 @@ class YoloLoss():
     def process_outputs(self):
         pass
 
-    def process_targets(self):
+    def process_targets(self, target: Tensor):
         pass
 
     def calculate(self):
@@ -78,16 +78,140 @@ FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Flo
 
 
 class YoloLoss_v1(YoloLoss):
+    def __init__(self, num_sample: int, grid_size: int = 7, num_classes: int = 20, num_anchors: int = 2,
+                 thred_conf: float = 0.3, lambda_obj: int = 1, lambda_noobj: int = 10):
+        super(YoloLoss_v1, self).__init__()
+        self.num_sample = num_sample
+        self.num_classes = num_classes
+        self.num_anchors = num_anchors
+        self.grid_size = grid_size
+        self.thred_conf: float = thred_conf
+        self.lambda_obj = lambda_obj
+        self.lambda_noobj = lambda_noobj
+        pass
+
+    def __call__(self, output: Tensor, target: Tensor):
+        self.check(output)
+        # 处理并提取预测数据
+        poutput = self.process_outputs()
+        try:
+            px = poutput['px']
+            py = poutput['py']
+            pw = poutput['pw']
+            ph = poutput['ph']
+            pconf = poutput['pconf']
+            pcls = poutput['pcls']
+        except:
+            raise Exception('YoloLoss v1的loss函数中，解包output的函数的返回值转换出了问题.')
+
+        # 处理并提取标签数据
+        ptarget = self.process_targets(target)
+        try:
+            tx = ptarget['tx']
+            ty = ptarget['ty']
+            tw = ptarget['tw']
+            th = ptarget['th']
+            tcls = ptarget['tcls']
+            tconf = ptarget['tconf']
+            mask_obj = ptarget['mask_obj']
+            mask_noobj = ptarget['mask_noobj']
+        except:
+            raise Exception('YoloLoss v1的loss函数中，解包target的函数的返回值转换出了问题.')
+
+        # 求Loss.
+        ### 求xywh loss
+        LossMSE = nn.MSELoss()
+        loss_x = LossMSE(px[mask_obj], tx[mask_obj])
+        loss_y = LossMSE(py[mask_obj], ty[mask_obj])
+        loss_w = LossMSE(pw[mask_obj], tw[mask_obj])
+        loss_h = LossMSE(ph[mask_obj], th[mask_obj])
+        loss_box = loss_x + loss_y + loss_w + loss_h
+
+        ### 求conf_loss
+        LossBCE = nn.BCELoss()
+        loss_conf_obj = LossBCE(pconf[mask_obj], tconf[mask_obj])
+        loss_conf_noobj = LossBCE(pconf[mask_obj], tconf[mask_obj])
+        loss_conf = self.lambda_obj * loss_conf_obj + self.lambda_noobj * loss_conf_noobj
+
+        ### 求class_loss
+        loss_cls = LossBCE(pcls[mask_obj], tcls[mask_obj])
+
+        total_loss = loss_box + loss_conf + loss_cls
+        return total_loss
+
     def check(self, output: Tensor):
         assert isinstance(output, Tensor)
-        assert output.shape[1] == 7
-        assert output.shape[2] == 7
-        assert output.shape[3] == 30
+        assert output.shape[1] == self.grid_size
+        assert output.shape[2] == self.grid_size
+        assert output.shape[3] == self.num_sample
         self.outputs = output
 
-    def process_outputs(self):
-        # px =
-        pass
+    def process_outputs(self) -> Dict[str, Tensor]:
+        pred_box = Tensor(self.num_sample, self.grid_size, self.grid_size, self.num_classes + 5)
+        pred_box[:, :, :, 5:] = self.outputs[:, :, :, 10:]
+        for index in range(self.num_sample):
+            for i in range(self.grid_size):
+                for j in range(self.grid_size):
+                    if self.outputs[index, i, j, 4] < self.thred_conf and self.outputs[
+                        index, i, j, 9] < self.thred_conf:
+                        pred_box[index, i, j, :5] = FloatTensor(5).fill_(0)
+                    elif self.outputs[index, i, j, 4] > self.outputs[index, i, j, 9]:
+                        pred_box[index, i, j, :5] = self.outputs[index, i, j, :5]
+                    else:
+                        pred_box[index, i, j] = self.outputs[index, i, j, 5:10]
+
+        pred_x = pred_box[:, :, :, 0]
+        pred_y = pred_box[:, :, :, 1]
+        pred_w = pred_box[:, :, :, 2]
+        pred_h = pred_box[:, :, :, 3]
+        pred_conf = pred_box[:, :, :, 4]
+        pred_cls = pred_box[:, :, :, 5:]
+        return {
+            "px": pred_x,
+            'py': pred_y,
+            "pw": pred_w,
+            "ph": pred_h,
+            "pconf": pred_conf,
+            "pcls": pred_cls
+        }
+
+    def process_targets(self, target: Tensor) -> Dict[str, Tensor]:
+        mask_shape = (self.num_sample, self.grid_size, self.grid_size)
+        mask_obj = ByteTensor(*mask_shape).fill_(0)
+        mask_noobj = ByteTensor(*mask_shape).fill_(1)
+        tx = FloatTensor(*mask_shape).fill_(0)
+        ty = FloatTensor(*mask_shape).fill_(0)
+        tw = FloatTensor(*mask_shape).fill_(0)
+        th = FloatTensor(*mask_shape).fill_(0)
+        tcls = FloatTensor(self.num_sample, self.grid_size, self.grid_size, self.num_classes).fill_(0)
+
+        target_box = target[:, 2:6] * self.grid_size  # 将xy由相对于整个图像转化为相对于一个网格.
+        gxy, gwh = target_box[:, :2], target_box[:, 2:]
+        image_index, target_labels = target[:, :2].long().t()
+        gx, gy = gxy.t()
+        gw, gh = gwh.t()
+        gi, gj = gxy.long().t()
+
+        mask_obj[image_index, gi, gj] = 1
+        mask_noobj[image_index, gi, gj] = 0
+
+        tx[image_index, gi, gj] = gx - gx.floor()
+        ty[image_index, gi, gj] = gy - gy.floor()
+        tw[image_index, gi, gj] = gw
+        th[image_index, gi, gj] = gh
+        tcls[image_index, gi, gj, target_labels] = 1
+        tconf = mask_obj.float()
+
+        return {
+            'tx': tx,
+            'ty': ty,
+            'tw': tw,
+            'th': th,
+            'tcls': tcls,
+            'tconf': tconf,
+            'mask_obj': mask_obj,
+            'mask_noobj': mask_noobj
+        }
 
 
 class YoloLoss_v3:
